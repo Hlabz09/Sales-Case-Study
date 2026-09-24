@@ -39,6 +39,11 @@ SELECT
     COUNT(`Quantity Sold`) AS total_quantity_sold
 FROM fnb_sales.sales.dataset;
 
+--Calculaating total revenue
+SELECT Date, 
+       ROUND ((Sales/`Quantity Sold`*`Quantity Sold`), 2) AS Revenue
+FROM fnb_sales.sales.dataset;
+
 --Checking minimum and maximum values
 SELECT
     MIN(Sales) AS min_sales,
@@ -61,85 +66,6 @@ FROM fnb_sales.sales.dataset;
 SELECT
     SUM(Sales) / SUM(`Quantity Sold`) AS average_sales_unit_price
 FROM fnb_sales.sales.dataset;
-      
-WITH daily_metrics AS (
-
-   SELECT
-        Date,
-        Sales,
-        `Cost Of Sales`,
-        `Quantity Sold`,
-
-    -- Sales price per unit
-    Sales / NULLIF(`Quantity Sold`, 0) AS daily_sales_price_per_unit,
-
-    -- Average sales price per unit
-    AVG(Sales / NULLIF(`Quantity Sold`, 0)) OVER() AS average_sales_price_per_unit,
-    
-    -- Gross profit  
-    Sales - `Cost Of Sales` AS gross_profit,
-
-    -- Gross profit %
-    (Sales - `Cost Of Sales`) / NULLIF(Sales, 0) * 100 AS daily_gross_profit_percent,
-
-    -- Gross profit per unit
-    (Sales - `Cost Of Sales`) / NULLIF(`Quantity Sold`, 0)  AS gross_profit_per_unit
-
-FROM fnb_sales.sales.dataset
-)
-
-SELECT
-    Date,
-    Sales,
-    `Cost Of Sales`,
-    `Quantity Sold`,
-    ROUND(daily_sales_price_per_unit, 2) AS daily_sales_price_per_unit,
-    ROUND(average_sales_price_per_unit, 2) AS average_sales_price_per_unit,
-    ROUND(gross_profit, 2) AS gross_profit,
-    ROUND(daily_gross_profit_percent, 2) AS gross_profit_percent,
-    ROUND(gross_profit_per_unit, 2) AS gross_profit_per_unit
-FROM daily_metrics
-ORDER BY Date;
-
-
-
---Average unit sales price
-SELECT
-    ROUND(
-        SUM(Sales) / NULLIF(SUM(`Quantity Sold`), 0),
-        2
-    ) AS Average_Unit_Sales_Price
-
-FROM fnb_sales.sales.dataset;
-
---Daily % gross profit
-SELECT
-    Date,
-    ROUND(
-        SUM(Sales - `Cost Of Sales`) / NULLIF(SUM(Sales), 0) * 100,
-        2
-    ) AS Daily_Gross_Profit_Percent
-FROM fnb_sales.sales.dataset
-GROUP BY Date
-ORDER BY Date;
-
---Daily gross profit per unit
-SELECT
-    Date,
-    ROUND(
-        (
-            (sales / NULLIF(`Quantity Sold`, 0))
-            -
-            (`Cost Of Sales` / NULLIF(`Quantity Sold`, 0))
-        )
-        / NULLIF(
-            sales / NULLIF(`Quantity Sold`, 0),
-            0
-        ) * 100,
-        2    
-    ) AS gross_profit_per_unit_percent
-FROM fnb_sales.sales.dataset
-ORDER BY Date;
 
 ---Compare promotion vs normal period ( 25 August 2015 - 7 September 2015)
 WITH promotion AS (
@@ -208,23 +134,86 @@ SELECT
         2
         ) AS price_elasticity
 FROM promotion
-CROSS JOIN normal_period;    
+CROSS JOIN normal_period; 
+      
+WITH daily_metrics AS (
 
+   SELECT
+        Date,
+        Sales,
+        `Cost Of Sales`,
+        `Quantity Sold`,
 
---One Dashboard KPI query
+    -- Sales price per unit
+    Sales / NULLIF(`Quantity Sold`, 0) AS daily_sales_price_per_unit,
+
+    -- Average sales price per unit
+    AVG(Sales / NULLIF(`Quantity Sold`, 0)) OVER() AS average_sales_price_per_unit,
+    
+    -- Gross profit  
+    Sales - `Cost Of Sales` AS gross_profit,
+
+    -- Gross profit %
+    (Sales - `Cost Of Sales`) / NULLIF(Sales, 0) * 100 AS daily_gross_profit_percent,
+
+    -- Gross profit per unit
+    (Sales - `Cost Of Sales`) / NULLIF(`Quantity Sold`, 0)  AS gross_profit_per_unit
+
+FROM fnb_sales.sales.dataset
+)
+
 SELECT
-   ROUND(SUM(Sales), 2) AS total_sales,
-   ROUND(SUM(`Cost Of Sales`), 2) AS total_cost,
-   SUM(`Quantity Sold`) AS total_quantity_sold,
-   ROUND(SUM(Sales) / NULLIF(SUM(`Quantity Sold`), 0), 2 ) AS average_sales_price_per_unit,     
-   ROUND(SUM(Sales - `Cost Of Sales`), 2) AS total_gross_profit,
-   ROUND(
-       (SUM(Sales) - SUM(`Cost Of Sales`)) / NULLIF(SUM(Sales), 0) * 100, 2
-        ) AS gross_profit_percent,
-      ROUND(
-          SUM(Sales - `Cost Of Sales`) / NULLIF(SUM(`Quantity Sold`), 0),
-          2
-      ) AS gross_profit_per_unit
+    Date,
+    Sales,
+    `Cost Of Sales`,
+    `Quantity Sold`,
+    ROUND(daily_sales_price_per_unit, 2) AS daily_sales_price_per_unit,
+    ROUND(average_sales_price_per_unit, 2) AS average_sales_price_per_unit,
+    ROUND(gross_profit, 2) AS gross_profit,
+    ROUND(daily_gross_profit_percent, 2) AS gross_profit_percent,
+    ROUND(gross_profit_per_unit, 2) AS gross_profit_per_unit
+FROM daily_metrics
+ORDER BY Date;
+
+
+--Average unit sales price
+SELECT
+    ROUND(
+        SUM(Sales) / NULLIF(SUM(`Quantity Sold`), 0),
+        2
+    ) AS Average_Unit_Sales_Price
+
 FROM fnb_sales.sales.dataset;
+
+--Daily % gross profit
+SELECT
+    Date,
+    ROUND(
+        SUM(Sales - `Cost Of Sales`) / NULLIF(SUM(Sales), 0) * 100,
+        2
+    ) AS Daily_Gross_Profit_Percent
+FROM fnb_sales.sales.dataset
+GROUP BY Date
+ORDER BY Date;
+
+--Daily gross profit per unit
+SELECT
+    Date,
+    ROUND(
+        (
+            (sales / NULLIF(`Quantity Sold`, 0))
+            -
+            (`Cost Of Sales` / NULLIF(`Quantity Sold`, 0))
+        )
+        / NULLIF(
+            sales / NULLIF(`Quantity Sold`, 0),
+            0
+        ) * 100,
+        2    
+    ) AS gross_profit_per_unit_percent
+FROM fnb_sales.sales.dataset
+ORDER BY Date;
+
+   
 
 
